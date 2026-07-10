@@ -18,3 +18,5 @@ pip install numpy pyyaml pillow
 
 Add laspy only if you're working with .las point clouds. For your QW_Ramp run (undistort images), you don't need laspy.
 
+# User Manual
+please see attached user manual txt file for details.
