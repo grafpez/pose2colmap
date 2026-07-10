@@ -1,0 +1,240 @@
+# pose2colmap.py v1.12 — User Manual
+
+**Purpose:** Convert PCS (PointCloud Studio) undistort exports to COLMAP format for 3D reconstruction in RealityCapture, Metashape, WebODM, and other COLMAP-compatible tools.
+
+**Download:** https://paste.rs/DP4yk
+
+---
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install numpy pyyaml pillow
+# Optional (for .las point cloud support)
+pip install laspy
+
+# Download script
+curl -o pose2colmap.py https://paste.rs/DP4yk
+
+# Basic usage — auto-discover all files in undistort folder
+python pose2colmap.py --folder "H:/ShareC1/workfolder/Project/Project/output/undistort"
+```
+
+---
+
+## What It Does
+
+1. **Reads PCS undistort export** (TransformedCam.json, .opt files, intrinsic files, xyzopk.txt, ImgPose.txt)
+2. **Converts to COLMAP format:**
+   - `sparse/cameras.txt` — camera intrinsics
+   - `sparse/images.txt` — image poses (quaternions + translations)
+   - `sparse/points3D.txt` — optional point cloud from .las
+3. **Organizes images** according to viewer convention (LFS, PS, RS2)
+4. **Handles fisheye** calibration (FULL_OPENCV, OPENCV_FISHEYE models)
+5. **Generates masks** for fisheye circle boundaries
+
+---
+
+## Arguments Reference
+
+### Input (Required)
+
+| Argument | Description |
+|:---------|:------------|
+| `--folder`, `-f` | PCS undistort folder (auto-discovers all files) |
+| `--left-json` | TransformedCam.json path (overrides auto-discovery) |
+| `--right-json` | Right camera TransformedCam.json (for separate-RIGHT mode) |
+
+### Override Auto-Discovery
+
+| Argument | Description |
+|:---------|:------------|
+| `--opt-left` | Left_undistort.opt path |
+| `--opt-right` | Right_undistort.opt path |
+| `--intrinsic-left` | left_undistort_intrinsic.txt path |
+| `--intrinsic-right` | right_undistort_intrinsic.txt path |
+| `--imgpose` | ImgPose.txt path |
+| `--calibration-yaml` | Path to `<project>/info/calibration.yaml` (POLYFISHEYE factory cal) |
+
+### Output
+
+| Argument | Default | Description |
+|:---------|:--------|:------------|
+| `--output-dir`, `-o` | `<folder_parent>/COLMAP/` | Output directory |
+| `--no-junction` | False | Skip creating image junction links (manual setup required) |
+| `--viewer-conventions` | `LFS` | Output format: `LFS` (LiveScan), `PS` (Postshot), `RS2` (RealityScan v2) |
+
+### Pose Source
+
+| Argument | Description |
+|:---------|:------------|
+| `--use-xyzopk` | Use xyzopk.txt instead of TransformedCam.json for poses |
+
+### Coordinate Transforms
+
+**Point Cloud Transforms (applied to points3D.txt):**
+
+| Argument | Default | Description |
+|:---------|:--------|:------------|
+| `--points-axis` | `xyz` | Axis permutation (e.g., `x-y-z` to flip Y) |
+| `--points-pitch` | `90.0` | Point cloud pitch rotation (degrees) |
+| `--points-yaw` | `-90.0` | Point cloud yaw rotation (degrees) |
+| `--points-roll` | `0.0` | Point cloud roll rotation (degrees) |
+
+**Camera Transforms (applied to images.txt):**
+
+| Argument | Default | Description |
+|:---------|:--------|:------------|
+| `--camera-axis` | `x-y-z` | Axis permutation for cameras |
+| `--camera-pitch` | `-90.0` | Camera pitch rotation (degrees) |
+| `--camera-yaw` | `-90.0` | Camera yaw rotation (degrees) |
+| `--camera-roll` | `0.0` | Camera roll rotation (degrees) |
+
+### Point Cloud (.las)
+
+| Argument | Description |
+|:---------|:------------|
+| `--las` | Path to colourised .las/.laz file for points3D.txt |
+| `--las-max-points` | Cap output to N points (uniform spatial subsampling) |
+
+### Fisheye Support
+
+| Argument | Description |
+|:---------|:------------|
+| `--fisheye` | Use raw fisheye images instead of undistort/ |
+| `--fisheye-left-opt` | Explicit path to Left.opt fisheye calibration |
+| `--fisheye-right-opt` | Explicit path to Right.opt fisheye calibration |
+| `--metashape-left-xml` | Metashape left-camera calibration XML (EquisolidFisheye → COLMAP OPENCV_FISHEYE) |
+| `--metashape-right-xml` | Metashape right-camera calibration XML |
+
+### Stereo
+
+| Argument | Default | Description |
+|:---------|:--------|:------------|
+| `--swap-lr` | False | Swap LEFT/RIGHT frame assignments |
+| `--no-swap-lr` | True | Disable L/R swap (default for RS2) |
+
+### Output Formatting
+
+| Argument | Default | Description |
+|:---------|:--------|:------------|
+| `--points3d-trailing-newlines` | `1` | Trailing newlines for points3D.txt: 0, 1, or 2 |
+
+---
+
+## Viewer Conventions
+
+| Convention | Image Path | Slash Style | Trailing Newlines |
+|:-----------|:-----------|:------------|:------------------|
+| `LFS` (default) | `images/` at COLMAP root | Forward `/` | 1 |
+| `PS` (Postshot) | Same as LFS | Forward `/` | 1 |
+| `RS2` (RealityScan v2) | `images/` inside `sparse/` | Backslash `\` | 1 (v2.2+ fixed) |
+
+---
+
+## Common Workflows
+
+### RS2 (RealityScan v2) — Stereo Fisheye
+
+```bash
+python pose2colmap.py --folder "H:/ShareC1/workfolder/QWH/Qwh/output/undistort" \
+    --viewer-conventions=RS2 \
+    --fisheye \
+    --points3d-trailing-newlines=1
+```
+
+### LFS (LiveScan) — Standard Undistort
+
+```bash
+python pose2colmap.py --folder "H:/ShareC1/workfolder/Project/output/undistort" \
+    --viewer-conventions=LFS
+```
+
+### With Point Cloud
+
+```bash
+python pose2colmap.py --folder "H:/ShareC1/workfolder/Project/output/undistort" \
+    --las "H:/ShareC1/workfolder/Project/output/colorized.las"
+```
+
+### Coordinate Transform Example
+
+```bash
+# Flip Y-axis for point cloud, keep cameras unchanged
+python pose2colmap.py --folder "H:/ShareC1/workfolder/Project/output/undistort" \
+    --points-axis=x-y-z \
+    --points-pitch=0 \
+    --points-yaw=0
+```
+
+### Independent Camera/Point Transforms
+
+```bash
+python pose2colmap.py --folder "H:/ShareC1/workfolder/Project/output/undistort" \
+    --camera-axis=xyz --camera-pitch=90 \
+    --points-axis=xyz --points-pitch=0 --points-yaw=90
+```
+
+---
+
+## Output Structure
+
+```
+COLMAP/
+├── sparse/
+│   ├── cameras.txt       # Camera intrinsics
+│   ├── images.txt        # Image poses (quaternions + translations)
+│   ├── points3D.txt      # Point cloud (if --las provided)
+│   ├── xyzopk.txt        # Copied from source (for RS2 manual reconstruction)
+│   ├── left/             # RS2: images + masks inside sparse/
+│   │   ├── image1.jpg
+│   │   └── image1.jpg.mask.png
+│   └── right/
+│       ├── image1.jpg
+│       └── image1.jpg.mask.png
+└── images/               # LFS/PS: images at COLMAP root
+    ├── left/
+    │   └── image1.jpg
+    └── right/
+        └── image1.jpg
+```
+
+---
+
+## Tips
+
+1. **PowerShell users:** Use `=` for arguments starting with `-`:
+   ```bash
+   --points-axis=x-y-z   # Correct
+   --points-axis x-y-z   # May be parsed as flag
+   ```
+
+2. **Auto-discovery:** When using `--folder`, the script finds:
+   - `TransformedCam.json`
+   - `*_undistort.opt`
+   - `*_undistort_intrinsic.txt`
+   - `ImgPose.txt`
+   - `xyzopk.txt`
+   - `.las` files in the folder
+
+3. **Fisheye masks:** Automatically generated as `<image>.jpg.mask.png` when using `--fisheye`
+
+4. **Dependencies:** Only `numpy`, `pyyaml`, `pillow` are required. `laspy` is optional.
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|:--------|:-----|:--------|
+| v1.12 | 2026-07-11 | Fixed version string in completion message; RS2 v2.2 trailing-newline fix; unified viewer conventions |
+| v1.11 | 2026-06-25 | RS2 trailing-newline fix; `--skip-decimation` option; viewer convention improvements |
+| v88 | 2026-05-25 | RS2 mask naming support; fisheye circle mask generation |
+
+---
+
+## Support
+
+- **Discord:** #share3dcam-bot (1491345568042193057)
+- **Knowledge Base:** `D:\1AI Files\SHARE3DCAM Support AI materials\`
