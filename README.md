@@ -1,5 +1,6 @@
 # pose2colmap
 (this is a personal project with the help of SHARE3DCAM bot provided)
+
 Creates COLMAP datasets from SHARE C1 LiDAR scanner data for use with RS2 or PS/LFS.
 
 Purpose of this script is to provide pathways for the datasets created by the LiDAR scanner to help processing in other softwares (RealityScan2; Postshot& LichtFeld Studio) via a COLMAP dataset format bridge, in order to aid 3D reconstruction using hybrid datasets. It also serves as a dataset-test bed for fisheye workflows between the different methods. 
