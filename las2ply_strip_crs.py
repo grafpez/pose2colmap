@@ -3,7 +3,7 @@
 las2ply_strip_crs.py  v7
 ========================
 Convert a LiDAR .las / .laz point cloud to a plain .ply file with NO
-embedded coordinate reference system (CRS/datum).
+embedded coordinate reference system (CRS/datum). 
 
 Why: Metashape Standard blocks "LiDAR data" and throws
      "Unsupported datum transformation" when a CRS is embedded.
