@@ -12,6 +12,8 @@ numpy — pip install numpy
 pyyaml — pip install pyyaml (imported as import yaml)
 pillow — pip install pillow (imported as PIL)
 laspy — pip install laspy (optional, only needed if you process .las → points3D.txt)
+-
+PySide6 (for GUI, ~100MB download)
 
 Standard library (already in Python, no install):
 pathlib, argparse, glob, json, math, os, re, shutil, sys, traceback, xml.etree.ElementTree
