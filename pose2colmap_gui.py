@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-pose2colmap_gui.py -- Dark Fusion GUI wrapper for pose2colmap.py
+pose2colmap_gui.py -- Dark Fusion GUI wrapper for pose2colmap.py 
 
 v1.1 - recursive auto-discovery fix
 """
